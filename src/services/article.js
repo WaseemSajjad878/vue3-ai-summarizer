@@ -9,7 +9,7 @@ const apiClient = axios.create({
   },
 });
 
-export const getArticleSummary = async (articleUrl, length = 3) => {
+export const fetchArticleSummary = async (articleUrl, length = 3) => {
     try {
       const response = await apiClient.get(`/summarize`, {
         params: {

@@ -1,59 +1,30 @@
 <script setup>
 import { onMounted, ref } from "vue";
-import { getArticleSummary } from "@/services/article";
+import { useArticleStore } from "@/stores/article";
+import { useLocalStorage } from "@/composables/useLocalStorage";
+import { storeToRefs } from 'pinia'
+import BaseInput from '@/components/base/Input.vue'
 
-const isLoading = ref(false);
-const url = ref(null);
-const articleSummary = ref(null);
-const allArticles = ref([]);
-const errorMessage = ref(null);
+const store = useArticleStore()
+const { isLoading, url, articleSummary, allArticles, errorMessage } = storeToRefs(store)
+const { getItem } = useLocalStorage()
+
 const setCopy = ref([])
 
 const handleSubmit = async () => {
-  try {
-    const existingArticle = allArticles.value?.find((item) => {
-      return item?.url === url.value;
-    });
-
-    if (existingArticle) {
-      articleSummary.value = existingArticle?.summary;
-      return;
-    }
-    const { summary } = await getArticleSummary(url.value);
-
-    if (summary) {
-      isLoading.value = true;
-      articleSummary.value = summary;
-      const newArticle = { url: url.value, summary: articleSummary.value };
-      allArticles.value.push(newArticle);
-      localStorage.setItem("articles", JSON.stringify(allArticles.value));
-      errorMessage.value = null;
-      console.log("articleSummary.value", articleSummary.value);
-    }
-  } catch (error) {
-    console.error("Error fetching summary:", error);
-    errorMessage.value = "Error fetching summary: " + error.message; // Store the error message
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const setArticle = (article) => {
-  url.value = article?.url;
-  articleSummary.value = article?.summary;
-};
+ await store.getArticleSummary()
+}
 
 const handleCopy = (copyUrl,index) => {
     setCopy.value[index] = true
     navigator.clipboard.writeText(copyUrl);
     setTimeout(() => setCopy.value[index] = false, 3000);
-  };
-
+}
 
 onMounted(async () => {
-  const articlesFromLocalStorage = JSON.parse(localStorage.getItem("articles"));
+  const articlesFromLocalStorage = getItem("articles");
   if (articlesFromLocalStorage) allArticles.value = articlesFromLocalStorage;
-});
+})
 </script>
 
 <template>
@@ -69,19 +40,18 @@ onMounted(async () => {
           alt="link-icon"
           class="absolute left-0 my-2 ml-3 w-5"
         />
-
-        <input
-          type="url"
-          placeholder="Paste the article link"
-          required
-          class="url_input peer"
-          v-model="url"
+        <BaseInput 
+        type="url"
+        placeholder="Paste the article link"
+        required
+        class="url_input peer"
+        v-model="url"
         />
         <button
           type="submit"
-          class="submit_btn peer-focus:border-gray-700 peer-focus:text-gray-700"
+          class="submit_btn peer-focus:border-gray-700 text-xl peer-focus:text-gray-700"
         >
-          <p>↵</p>
+        ↵
         </button>
       </form>
 
@@ -96,20 +66,27 @@ onMounted(async () => {
             <img v-if="setCopy[index]"
               src="@/assets/images/tick.svg"
               alt=""
-              class="w-[40%] h-[40%] object-contain"
+              class="w-[16px] h-[16px] object-contain"
             />
             <img v-else
               src="@/assets/images/copy.svg"
               alt=""
-              class="w-[40%] h-[40%] object-contain"
+              class="w-[16px] h-[16px] object-contain"
             />
           </div>
           <p
-            @click="setArticle(article)"
+            @click="store?.saveArticleHistory(article)"
             class="flex-1 font-satoshi text-blue-700 font-medium text-sm truncate"
           >
             {{ article?.url }}
           </p>
+          <div @click="store?.deleteArticleHistory(article?.url)" class="copy_btn ms-auto">
+            <img
+              src="@/assets/images/trash.png"
+              alt=""
+              class="w-[14px] h-[14px] object-contain"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -120,7 +97,7 @@ onMounted(async () => {
       v-if="isLoading"
       src="@/assets/images/loader.svg"
       alt="loader"
-      className="w-20 h-20 object-contain"
+      className="w-20 h-20 object-contain mx-auto mt-12"
     />
     <p
       v-else-if="errorMessage"
