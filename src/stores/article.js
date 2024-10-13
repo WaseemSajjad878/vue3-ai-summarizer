@@ -14,7 +14,6 @@ export const useArticleStore = defineStore('article', {
     errorMessage: null,
   }),
   getters: {
-    // doubleCount: (state) => state.count * 2,
   },
   actions: {
     async getArticleSummary() {

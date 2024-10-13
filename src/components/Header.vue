@@ -1,7 +1,7 @@
 <script setup>
 const goToGitHub = () => {
   window.open(
-    "https://github.com/adrianhajdin/project_ai_summarizer",
+    "https://github.com/WaseemSajjad878/vue3-ai-summarizer",
     "_blank"
   );
 };
